@@ -85,7 +85,7 @@ function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
           style={formInput}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          aria-invalid={!isUsernameValid && username !== '' ? 'true' : 'false'}
+          aria-invalid={!isUsernameValid && username !== ''}
         />
 
         <label htmlFor="password" style={formLabel}>
@@ -97,7 +97,7 @@ function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
           style={formInput}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          aria-invalid={failingCriteria.length > 0 && password !== '' ? 'true' : 'false'}
+          aria-invalid={failingCriteria.length > 0 && password !== ''}
           aria-describedby={failingCriteria.length > 0 && password !== '' ? 'password-errors' : undefined}
         />
 
