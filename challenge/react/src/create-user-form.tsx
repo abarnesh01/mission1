@@ -98,11 +98,12 @@ function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           aria-invalid={failingCriteria.length > 0 && password !== '' ? 'true' : 'false'}
+          aria-describedby={failingCriteria.length > 0 && password !== '' ? 'password-errors' : undefined}
         />
 
         {/* Show ONLY failing criteria dynamically */}
         {password !== '' && failingCriteria.length > 0 && (
-          <ul style={errorList}>
+          <ul id="password-errors" style={errorList}>
             {failingCriteria.map((c) => (
               <li key={c.id}>{c.label}</li>
             ))}
