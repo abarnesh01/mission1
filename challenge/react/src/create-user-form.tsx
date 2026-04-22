@@ -5,6 +5,7 @@ interface CreateUserFormProps {
 }
 
 const API_BASE_URL = 'https://api.challenge.hennge.com/password-validation-challenge-api/001';
+const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsiYWJhcm5lc2g3NzJAZ21haWwuY29tIl0sImlzcyI6Imhlbm5nZS1hZG1pc3Npb24tY2hhbGxlbmdlIiwic3ViIjoiY2hhbGxlbmdlIn0.zmYW1-p3JT8P5JbS70lskktaVHkssN70tNOd6dwTbv4';
 
 function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
   const [username, setUsername] = useState('');
@@ -12,12 +13,12 @@ function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
   const [apiError, setApiError] = useState('');
 
   const passwordCriteria = [
-    { id: 'min-length', label: 'Password must be at least 10 characters long', isValid: (p: string) => p.length >= 10 },
-    { id: 'max-length', label: 'Password must be at most 24 characters long', isValid: (p: string) => p.length <= 24 },
-    { id: 'no-spaces', label: 'Password cannot contain spaces', isValid: (p: string) => !p.includes(' ') },
-    { id: 'one-number', label: 'Password must contain at least one number', isValid: (p: string) => /\d/.test(p) },
-    { id: 'one-uppercase', label: 'Password must contain at least one uppercase letter', isValid: (p: string) => /[A-Z]/.test(p) },
-    { id: 'one-lowercase', label: 'Password must contain at least one lowercase letter', isValid: (p: string) => /[a-z]/.test(p) },
+    { id: 'min', label: 'Password must be at least 10 characters long', isValid: (p: string) => p.length >= 10 },
+    { id: 'max', label: 'Password must be at most 24 characters long', isValid: (p: string) => p.length <= 24 },
+    { id: 'space', label: 'Password cannot contain spaces', isValid: (p: string) => !p.includes(' ') },
+    { id: 'num', label: 'Password must contain at least one number', isValid: (p: string) => /\d/.test(p) },
+    { id: 'upper', label: 'Password must contain at least one uppercase letter', isValid: (p: string) => /[A-Z]/.test(p) },
+    { id: 'lower', label: 'Password must contain at least one lowercase letter', isValid: (p: string) => /[a-z]/.test(p) },
   ];
 
   const failingCriteria = passwordCriteria.filter((c) => !c.isValid(password));
@@ -26,8 +27,9 @@ function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setApiError('');
+    setApiError(''); // Reset errors on resubmission
 
+    // Block API call if username is empty or password is invalid
     if (!isUsernameValid || !isPasswordValid) {
       return;
     }
@@ -37,10 +39,7 @@ function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Note: The token should be obtained from the path parameter of the /challenge-details page.
-          // Since it's not provided in the workspace, I've left it as a placeholder or handled as needed.
-          // In a real environment, this might be injected or retrieved from the URL.
-          'Authorization': 'Bearer YOUR_TOKEN_HERE',
+          'Authorization': `Bearer ${AUTH_TOKEN}`,
         },
         body: JSON.stringify({ username, password }),
       });
@@ -53,10 +52,19 @@ function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
         } else if (response.status === 500) {
           setApiError('Something went wrong, please try again.');
         } else {
-          const data = await response.json();
-          if (data.errors?.includes('not_allowed')) {
-            setApiError('Sorry, the entered password is not allowed, please try a different one.');
-          } else {
+          try {
+            const data = await response.json();
+            // Safer blocked password detection as requested
+            if (
+              data?.error === 'password_not_allowed' ||
+              data?.message?.toLowerCase().includes('not allowed') ||
+              data?.errors?.includes('not_allowed')
+            ) {
+              setApiError('Sorry, the entered password is not allowed, please try a different one.');
+            } else {
+              setApiError('Something went wrong, please try again.');
+            }
+          } catch {
             setApiError('Something went wrong, please try again.');
           }
         }
@@ -77,7 +85,7 @@ function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
           style={formInput}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          aria-invalid={!isUsernameValid && username !== ''}
+          aria-invalid={!isUsernameValid && username !== '' ? 'true' : 'false'}
         />
 
         <label htmlFor="password" style={formLabel}>
@@ -89,13 +97,14 @@ function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
           style={formInput}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          aria-invalid={failingCriteria.length > 0 && password !== ''}
+          aria-invalid={failingCriteria.length > 0 && password !== '' ? 'true' : 'false'}
         />
 
+        {/* Show ONLY failing criteria dynamically */}
         {password !== '' && failingCriteria.length > 0 && (
           <ul style={errorList}>
-            {failingCriteria.map((criterion) => (
-              <li key={criterion.id}>{criterion.label}</li>
+            {failingCriteria.map((c) => (
+              <li key={c.id}>{c.label}</li>
             ))}
           </ul>
         )}
